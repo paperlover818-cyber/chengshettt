@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C语言语法与使用范围清单</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #202c29; background: #f7f9f8; font: 15px/1.8 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+    header { background: #fff; border-bottom: 1px solid #dce6e1; padding: 16px 24px; }
+    header a { color: #246754; text-decoration: none; font-weight: 600; }
+    main { max-width: 1100px; margin: auto; padding: 24px; }
+    h1 { font-size: 26px; line-height: 1.4; }
+    h2 { color: #246754; font-size: 20px; margin-top: 36px; }
+    code { font-family: ui-monospace, monospace; background: #eaf1ee; padding: 2px 4px; border-radius: 3px; overflow-wrap: anywhere; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { border: 1px solid #dce6e1; padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: #edf4f0; }
+    @media (max-width: 600px) { main { padding: 16px; } h1 { font-size: 22px; } table { min-width: 650px; } }
+  </style>
+</head>
+<body>
+  <header><a href="./">← 返回题目练习</a></header>
+  <main id="content"><p>正在加载清单……</p></main>
+  <script>
+    const content = document.getElementById('content');
+    const escapeHtml = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const inline = text => escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>');
+    function cells(line) {
+      let quoted = false, current = '', result = [];
+      for (const ch of line.slice(1, -1)) {
+        if (ch === '`') quoted = !quoted;
+        if (ch === '|' && !quoted) { result.push(current.trim()); current = ''; }
+        else current += ch;
+      }
+      result.push(current.trim());
+      return result;
+    }
+    const guide = new URLSearchParams(location.search).get('view') === 'tips';
+    if (guide) document.title = 'C语言常见题型与解题技巧';
+    fetch(guide ? '常见题型与解题技巧.md' : 'C语言语法与使用范围清单.md').then(response => {
+      if (!response.ok) throw new Error('无法读取清单');
+      return response.text();
+    }).then(text => {
+      const lines = text.split(/\r?\n/), output = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        if (line.startsWith('|') && i + 1 < lines.length && /^\|\s*-/.test(lines[i + 1])) {
+          const head = cells(line); i += 2;
+          let table = '<div class="table-wrap"><table><thead><tr>' + head.map(c => '<th scope="col">' + inline(c) + '</th>').join('') + '</tr></thead><tbody>';
+          while (i < lines.length && lines[i].startsWith('|')) {
+            table += '<tr>' + cells(lines[i]).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>'; i++;
+          }
+          output.push(table + '</tbody></table></div>'); i--; continue;
+        }
+        const heading = /^(#{1,2}) (.*)$/.exec(line);
+        if (heading) { const level = heading[1].length; output.push('<h' + level + '>' + inline(heading[2]) + '</h' + level + '>'); }
+        else if (/^\d+\. /.test(line)) output.push('<p>' + inline(line) + '</p>');
+        else output.push('<p>' + inline(line) + '</p>');
+      }
+      content.innerHTML = output.join('');
+    }).catch(() => { content.textContent = '清单加载失败，请从本地练习服务打开此页面。'; });
+  </script>
+</body>
+</html>
